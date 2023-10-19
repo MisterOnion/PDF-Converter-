@@ -3,11 +3,10 @@ from tkinter import filedialog, messagebox  # file processing lib
 from PIL import Image  # image processing lib
 from docx import Document  # doc to pdf process
 from docx.shared import Inches  # image in doc to pdf process
-import io  # manages input/ouput low level binary data
 from io import BytesIO  # binary conversion
 from reportlab.pdfgen import canvas  # more GUI widgets
 from reportlab.lib.pagesizes import letter  # more GUI widgets
-
+from docx2pdf import convert # image in word convertion with LibreOffice
 
 
 class PDFConverter:
@@ -36,7 +35,7 @@ class PDFConverter:
     def convert_images_to_pdf(self):
         images = self.select_images()
         if images:
-            pdf_name = self.select_pdf()
+            pdf_name = self.select_image_pdf()
             if pdf_name:
                 try:
                     # Create a new PDF file
@@ -52,46 +51,41 @@ class PDFConverter:
     def convert_doc_to_pdf(self):
         word_document = self.select_doc()
 
-        if word_document:
-            try:
-                doc = Document(word_document.name)
-                doc_name = self.select_pdf()
+        try:
+            convert(word_document)
+            word_document = self.select_doc_pdf()
+            messagebox.showinfo("Success", "Word Documents have been successfully converted to PDF.")
+        except Exception as e:
+            messagebox.showerror("Error", f"Failed to convert to PDF.\nError: {str(e)}")
 
-                if doc_name:
-                    c = canvas.Canvas(doc_name, pagesize=letter)
 
-                    for paragraph in doc.paragraphs:
-                        for run in paragraph.runs:
-                            for inline_shape in run._r.inline_shapes:
-                                image_stream = BytesIO(inline_shape._inline._blip)
-                                image = Image.open(image_stream)
 
-                                # Generate a unique image name using the element ID
-                                image_path = f"image_{inline_shape._inline.attrib['id']}.jpg"
-                                image.save(image_path)
-
-                                # Insert the image into the PDF
-                                c.drawInlineImage(image_path, 0, 0)
-
-                    c.save()
-                    messagebox.showinfo("Success", "Word Documents have been successfully converted to PDF.")
-            except Exception as e:
-                messagebox.showerror("Error", f"Failed to convert to PDF.\nError: {str(e)}")
+     
 
     def select_doc(self):
-        doc = filedialog.askopenfile(title="Doc File", filetypes=(
-            ("Word Documents", "*.docx"), ("All files", "*.*")), initialdir="C:/")
-        return doc
+        doc_pdf = filedialog.asksaveasfilename(
+            title="Save PDF as",
+            defaultextension=".pdf",
+            initialdir="C:/",
+            filetypes=(("Doc files", "*.docx"), ("All files", "*.*"))
+        )
+        return doc_pdf
+    
 
     def select_images(self):
         images = filedialog.askopenfilenames(title="Select Images", filetypes=(
             ("Image files", "*.jpg;*.jpeg;*.png"), ("All files", "*.*")), initialdir="C:/")
         return images
 
-    def select_pdf(self):
-        pdf = filedialog.asksaveasfilename(title="Save PDF as", defaultextension=".pdf",
+    def select_image_pdf(self):
+        image_pdf = filedialog.asksaveasfilename(title="Save PDF as", defaultextension=".pdf",
                                            initialdir="C:/", filetypes=(("PDF files", "*.pdf"), ("All files", "*.*")))
-        return pdf
+        return image_pdf
+    
+    def select_doc_pdf(self):
+        doc_pdf = filedialog.asksaveasfilename(title="Save PDF as", defaultextension=".pdf",
+            initialdir="C:/", filetypes=(("PDF files", "*.pdf"), ("All files", "*.*")))
+        return doc_pdf
 
     def run(self):
         self.canvas.pack()
